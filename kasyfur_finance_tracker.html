@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finance Tracker">
+<title>Kasyfur Finance Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+  :root {
+    --bg-base:#0f1117; --bg-primary:#1a1d27; --bg-secondary:#22263a; --bg-tertiary:#2a2e45;
+    --text-primary:#e2e8f0; --text-secondary:#8892a4; --text-tertiary:#505a72;
+    --text-success:#4ade80; --text-warning:#f59e0b; --text-danger:#f87171; --text-info:#60a5fa;
+    --bg-success:#052e16; --bg-warning:#2d1a00; --bg-danger:#2d0a0a; --bg-info:#0a1929;
+    --border-success:#166534; --border-warning:#92400e; --border-danger:#7f1d1d; --border-info:#1e3a5f;
+    --border-base:rgba(255,255,255,0.08); --border-mid:rgba(255,255,255,0.14);
+    --radius-sm:6px; --radius-md:8px; --radius-lg:12px;
+    --font:'JetBrains Mono','Fira Code','Courier New',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{height:100%;overflow:hidden}
+  body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font);font-size:14px;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  body.selecting{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+  .shell{max-width:900px;margin:0 auto;padding:1rem 1rem 5rem}
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:0.5px solid var(--border-base)}
+  .header-left h1{font-size:16px;font-weight:600;margin-bottom:2px} .header-left p{font-size:11px;color:var(--text-tertiary)}
+  .btn-mini{background:transparent;border:0.5px solid var(--border-mid);color:var(--text-secondary);font-family:var(--font);font-size:10px;padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s}
+  .btn-mini:active{background:var(--bg-secondary);color:var(--text-primary)}
+  .save-bar{display:flex;align-items:center;justify-content:space-between;font-size:10px;margin-bottom:1rem;padding:6px 0;color:var(--text-tertiary)}
+  .s-ok{color:var(--text-success)} .s-warn{color:var(--text-warning)}
+  .tabs{display:flex;gap:0;border-bottom:0.5px solid var(--border-base);margin-bottom:1.25rem;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--text-tertiary);font-family:var(--font);font-size:11px;padding:8px 14px;cursor:pointer;margin-bottom:-1px;transition:all .15s;white-space:nowrap;flex-shrink:0}
+  .tab:active,.tab:hover{color:var(--text-secondary)} .tab.active{color:var(--text-primary);border-bottom-color:var(--text-primary)}
+  .card{background:var(--bg-primary);border:0.5px solid var(--border-base);border-radius:var(--radius-lg);padding:1rem;margin-bottom:12px}
+  .card-sm{padding:0.75rem 1rem}
+  .card-title{font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .stat-label{font-size:11px;color:var(--text-secondary)} .stat-val{font-size:16px;font-weight:600}
+  .prog-bar{background:var(--bg-secondary);border-radius:5px;height:6px;overflow:hidden;border:0.5px solid var(--border-base);margin:8px 0 6px 0}
+  .prog-fill{height:100%;border-radius:5px;transition:width .4s ease}
+  .prog-pct{font-size:10px;color:var(--text-tertiary);display:flex;justify-content:space-between}
+  .alerts{margin-bottom:12px}
+  .alert{border-radius:var(--radius-md);padding:8px 10px;font-size:11px;margin-bottom:6px;display:flex;align-items:flex-start;gap:6px;border:0.5px solid}
+  .a-warn{background:var(--bg-warning);border-color:var(--border-warning);color:var(--text-warning)}
+  .a-danger{background:var(--bg-danger);border-color:var(--border-danger);color:var(--text-danger)}
+  .a-success{background:var(--bg-success);border-color:var(--border-success);color:var(--text-success)}
+  .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .metric-box{background:var(--bg-secondary);border:0.5px solid var(--border-base);border-radius:var(--radius-md);padding:10px 12px}
+  .metric-label{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+  .metric-val{font-size:15px;font-weight:600}
+  .field{margin-bottom:12px} .field label{font-size:10px;color:var(--text-secondary);display:block;margin-bottom:4px}
+  input[type=number],input[type=text],select,textarea{width:100%;background:var(--bg-secondary);border:0.5px solid var(--border-mid);color:var(--text-primary);font-family:var(--font);font-size:13px;padding:8px;border-radius:var(--radius-sm);outline:none;-webkit-appearance:none;appearance:none}
+  input[type=number]:focus,select:focus,textarea:focus{border-color:rgba(255,255,255,.3)}
+  select{background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238892a4' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 8px center;background-size:16px;padding-right:32px}
+  select option{background:var(--bg-secondary)}
+  textarea{resize:none;font-size:12px;height:70px}
+  .check-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+  input[type=checkbox]{width:16px;height:16px;accent-color:#4ade80;cursor:pointer;flex-shrink:0;margin-top:1px}
+  .check-label{font-size:12px;cursor:pointer;color:var(--text-primary);word-break:break-word} .check-label.done{color:var(--text-tertiary);text-decoration:line-through}
+  .phase-group{margin-bottom:16px} .phase-title{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:0.5px solid var(--border-base)}
+  .divider{border:none;border-top:0.5px solid var(--border-base);margin:10px 0}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .tag{font-size:9px;padding:2px 6px;border-radius:3px;font-family:var(--font);font-weight:500}
+  .tag-bonus{background:var(--bg-warning);color:var(--text-warning);border:0.5px solid var(--border-warning)}
+  .tag-danger{background:var(--bg-danger);color:var(--text-danger);border:0.5px solid var(--border-danger)}
+  .hist-entry{background:var(--bg-primary);border:0.5px solid var(--border-base);border-radius:var(--radius-lg);padding:1rem;margin-bottom:10px}
+  .hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .hist-month{font-weight:600;font-size:12px}
+  .hist-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;font-size:11px;margin-top:8px}
+  .hist-col{display:flex;flex-direction:column}
+  .hist-lbl{color:var(--text-tertiary);font-size:9px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+  .hist-num{font-weight:600}
+  .empty-state{color:var(--text-tertiary);font-size:12px;text-align:center;padding:2rem 1rem}
+  .toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .toggle-label{font-size:12px;color:var(--text-secondary);cursor:pointer}
+  .inline-msg{font-size:11px;margin-top:6px}
+  .backup-box{background:var(--bg-secondary);border:0.5px solid var(--border-base);border-radius:var(--radius-md);padding:1rem;margin-bottom:12px}
+  .backup-label{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+  textarea.backup-code{font-size:10px;height:80px;line-height:1.4;font-family:monospace;word-break:break-all;overflow-y:auto}
+  .btn-action{background:var(--bg-secondary);border:0.5px solid var(--border-mid);color:var(--text-secondary);font-family:var(--font);font-size:11px;padding:8px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;width:100%}
+  .btn-action:active{background:var(--bg-tertiary);color:var(--text-primary)}
+  .copy-hint{font-size:9px;color:var(--text-tertiary);margin-top:4px}
+  .chart-container{position:relative;height:200px;margin-bottom:12px;padding:0}
+  .cashflow-breakdown{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border-base)}
+  .cf-item{text-align:center}
+  .cf-label{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+  .cf-val{font-size:14px;font-weight:600}
+  @media(max-width:480px){.shell{padding:0.75rem 0.75rem 4rem}.header{margin-bottom:1rem}.metric-grid{grid-template-columns:1fr}.hist-grid{grid-template-columns:1fr 1fr}.cashflow-breakdown{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="header">
+    <div class="header-left">
+      <h1>Finance Tracker</h1>
+      <p>Goal: RM10,000</p>
+    </div>
+    <button class="btn-mini" onclick="toggleBackup()">backup</button>
+  </div>
+
+  <div class="save-bar">
+    <span id="save-status">—</span>
+    <span id="save-time"></span>
+  </div>
+
+  <div id="backup-panel" style="display:none;margin-bottom:1.5rem">
+    <div class="backup-box">
+      <div class="backup-label">📋 export — copy this code</div>
+      <textarea class="backup-code" id="export-box" readonly></textarea>
+      <div class="copy-hint">Triple-tap to select all, then copy (Cmd+C)</div>
+      <button class="btn-action" onclick="copyExport()" style="margin-top:8px">📋 copy code</button>
+      
+      <div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border-base)">
+        <div class="backup-label" style="margin-bottom:6px">📥 import — paste your code</div>
+        <textarea class="backup-code" id="import-box" placeholder="Paste backup code here..."></textarea>
+        <div id="import-err" style="font-size:10px;color:var(--text-danger);margin-top:4px"></div>
+        <button class="btn-action" onclick="doImport()" style="margin-top:8px">📥 restore</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('dashboard',this)">dashboard</button>
+    <button class="tab" onclick="switchTab('month',this)">this month</button>
+    <button class="tab" onclick="switchTab('history',this)">history</button>
+  </div>
+
+  <div id="tab-dashboard"></div>
+  <div id="tab-month" style="display:none"></div>
+  <div id="tab-history" style="display:none"></div>
+
+</div>
+
+<script>
+const SK="kf-v6-json";
+const GOAL=10000;
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const FIXED={parking:85,mother:300,petrol:300,chatgpt:24,youtube:8,netflix:25.16};
+const FIXED_TOTAL=Object.values(FIXED).reduce((a,b)=>a+b,0);
+const CL=[
+  {id:"salaryConfirmed",phase:"income",label:"Salary confirmed"},
+  {id:"savingsTransferred",phase:"savings",label:"Savings transferred (RM800–1K)"},
+  {id:"savingsUpdated",phase:"savings",label:"Tracker updated"},
+  {id:"parkingPaid",phase:"fixed",label:"Parking RM85"},
+  {id:"motherPaid",phase:"fixed",label:"Mother RM300"},
+  {id:"petrolAllocated",phase:"fixed",label:"Petrol RM300"},
+  {id:"chatgptPaid",phase:"fixed",label:"ChatGPT RM24"},
+  {id:"youtubePaid",phase:"fixed",label:"YouTube RM8"},
+  {id:"netflixPaid",phase:"fixed",label:"Netflix RM25.16"},
+  {id:"paylaterPaid",phase:"debt",label:"PayLater paid"},
+  {id:"paylaterDecreasing",phase:"debt",label:"Balance decreasing"},
+  {id:"noPaylaterNew",phase:"debt",label:"No new PayLater"},
+  {id:"weeklyBudgetSet",phase:"budget",label:"Weekly budget set"},
+  {id:"foodBudgetSet",phase:"budget",label:"Food allocated"},
+  {id:"midMonthCheck",phase:"midmonth",label:"Mid-month check"},
+  {id:"savingsUntouched",phase:"midmonth",label:"Savings untouched"},
+  {id:"endMonthReview",phase:"endmonth",label:"End review"},
+];
+const PH=[{id:"income",label:"Income"},{id:"savings",label:"Savings"},{id:"fixed",label:"Fixed"},{id:"debt",label:"Debt"},{id:"budget",label:"Budget"},{id:"midmonth",label:"Mid-month"},{id:"endmonth",label:"End"}];
+
+function lz(v,p){return String(v).padStart(p,"0")}
+function mid(y,m){return`${y}${lz(m,2)}`}
+function nowMid(){const n=new Date();return mid(n.getFullYear(),n.getMonth()+1)}
+function defCL(){return Object.fromEntries(CL.map(i=>[i.id,false]))}
+function defMonth(y,m){return{y,m,bn:false,s:3067.85,o:0,t:3067.85,sv:0,food:0,misc:0,p:953.64,pu:false,c:defCL()}}
+
+let S={m:{}};
+let cmid=nowMid();
+let tab="dashboard";
+let trendChart=null;
+
+function rm(n){return"RM"+parseFloat(n).toFixed(2)}
+function pct(a,b){return Math.min(100,(a/b)*100)}
+function totalSaved(){return Object.values(S.m).reduce((a,m)=>a+(parseFloat(m.sv)||0),0)}
+function getCM(){const y=parseInt(cmid.substring(0,4));const m=parseInt(cmid.substring(4,6));return S.m[cmid]||defMonth(y,m)}
+
+function calcCashflow(month){
+  const income=parseFloat(month.t)||0;
+  const fixed=FIXED_TOTAL;
+  const paylater=parseFloat(month.p)||0;
+  const savings=parseFloat(month.sv)||0;
+  const food=parseFloat(month.food)||0;
+  const misc=parseFloat(month.misc)||0;
+  const totalExpenses=fixed+paylater+food+misc;
+  const remaining=income-fixed-savings;
+  return{income,fixed,paylater,food,misc,savings,totalExpenses,remaining};
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(SK,JSON.stringify(S));
+    setStatus("✓ saved","s-ok");
+    const n=new Date();
+    document.getElementById("save-time").textContent=n.toLocaleTimeString("en-MY",{hour:"2-digit",minute:"2-digit"});
+  }catch(e){
+    setStatus("! save failed","s-warn");
+  }
+  updateExport();
+}
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem(SK);
+    if(raw){
+      S=JSON.parse(raw);
+      setStatus("✓ loaded","s-ok");
+    }else{
+      setStatus("new","s-muted");
+    }
+  }catch(e){
+    setStatus("new","s-muted");
+  }
+  renderAll();
+}
+
+function setStatus(msg,cls){
+  const el=document.getElementById("save-status");
+  el.textContent=msg;
+  el.className=cls;
+}
+
+function updateExport(){
+  const b=document.getElementById("export-box");
+  if(!b)return;
+  try{
+    b.value=JSON.stringify(S,null,2);
+  }catch(e){
+    b.value="Error creating backup code";
+  }
+}
+
+function copyExport(){
+  const box=document.getElementById("export-box");
+  box.select();
+  document.execCommand("copy");
+  alert("Code copied to clipboard!");
+}
+
+function doImport(){
+  const val=document.getElementById("import-box").value.trim();
+  const err=document.getElementById("import-err");
+  if(!val){
+    err.textContent="Paste code first";
+    return;
+  }
+  try{
+    S=JSON.parse(val);
+    saveState();
+    setStatus("✓ imported","s-ok");
+    err.textContent="";
+    document.getElementById("import-box").value="";
+    renderAll();
+    alert("Data imported successfully!");
+  }catch(e){
+    err.textContent="Invalid code — make sure you copied the entire thing";
+  }
+}
+
+function updateCM(patch){
+  const cm=getCM();
+  const u={...cm,...patch};
+  u.t=(parseFloat(u.s)||0)+(parseFloat(u.o)||0);
+  S.m[cmid]=u;
+  saveState();
+  renderAll();
+}
+
+function toggleCheck(id){
+  const cm=getCM();
+  updateCM({c:{...cm.c,[id]:!cm.c[id]}});
+}
+
+function switchTab(name,btn){
+  tab=name;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  btn.classList.add("active");
+  ["dashboard","month","history"].forEach(t=>{document.getElementById("tab-"+t).style.display=t===name?"block":"none"});
+  renderAll();
+}
+
+function toggleBackup(){
+  const p=document.getElementById("backup-panel");
+  p.style.display=p.style.display==="none"?"block":"none";
+  updateExport();
+}
+
+function pbar(val,max,color,h="6px"){
+  const p=pct(val,max);
+  return`<div class="prog-bar"><div class="prog-fill" style="width:${p.toFixed(1)}%;background:${color}"></div></div>`;
+}
+
+function renderDashboard(){
+  const cm=getCM();
+  const cf=calcCashflow(cm);
+  const saved=totalSaved();
+  const remaining=Math.max(0,GOAL-saved);
+  const prog=pct(saved,GOAL);
+  const clDone=CL.filter(i=>cm.c[i.id]).length;
+  
+  const warns=[];
+  if(cm.sv>0&&cm.sv<800)warns.push({t:"warn",m:"Below RM800 target"});
+  if(cm.pu)warns.push({t:"danger",m:"PayLater used this month"});
+  if(cf.remaining<500)warns.push({t:"danger",m:"Very tight cashflow (< RM500 left)"});
+  
+  const mLog=Object.values(S.m).filter(m=>m.sv>0).length;
+  const est=remaining>0?(mLog>0?Math.ceil(remaining/(saved/mLog)):Math.ceil(remaining/900)):0;
+
+  const monthName=MN[parseInt(cmid.substring(4,6))-1];
+  const yearNum=cmid.substring(0,4);
+  
+  document.getElementById("tab-dashboard").innerHTML=`
+    <div class="card">
+      <div style="margin-bottom:1rem">
+        <div class="stat-row" style="margin-bottom:8px"><span class="stat-label">RM10,000 Goal</span><span class="stat-val" style="color:#4ade80">${rm(saved)}</span></div>
+        ${pbar(saved,GOAL,"#4ade80")}
+        <div class="prog-pct"><span>${prog.toFixed(1)}%</span><span>${rm(remaining)} to go</span></div>
+      </div>
+      <hr class="divider">
+      <div class="metric-grid">
+        <div class="metric-box"><div class="metric-label">Total Saved</div><div class="metric-val" style="color:#4ade80">${rm(saved)}</div></div>
+        <div class="metric-box"><div class="metric-label">Remaining</div><div class="metric-val">${rm(remaining)}</div></div>
+        <div class="metric-box"><div class="metric-label">${monthName} Income</div><div class="metric-val" style="color:${cm.bn?"#f59e0b":"var(--text-primary)"}">${rm(cm.t)}${cm.bn?" ★":""}</div></div>
+        <div class="metric-box"><div class="metric-label">${monthName} Saved</div><div class="metric-val" style="color:#4ade80">${rm(cm.sv)}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Cashflow — ${monthName} ${yearNum}</div>
+      <div class="metric-grid">
+        <div class="metric-box"><div class="metric-label">Income</div><div class="metric-val" style="color:#60a5fa">${rm(cf.income)}</div></div>
+        <div class="metric-box"><div class="metric-label">Fixed Costs</div><div class="metric-val" style="color:#f87171">–${rm(cf.fixed)}</div></div>
+        <div class="metric-box"><div class="metric-label">Savings</div><div class="metric-val" style="color:#4ade80">–${rm(cf.savings)}</div></div>
+      </div>
+      <div class="cashflow-breakdown">
+        <div class="cf-item"><div class="cf-label">Food + Misc</div><div class="cf-val">–${rm(cf.food+cf.misc)}</div></div>
+        <div class="cf-item"><div class="cf-label">PayLater Due</div><div class="cf-val">–${rm(cf.paylater)}</div></div>
+        <div class="cf-item"><div class="cf-label" style="color:${cf.remaining<0?"#f87171":"#4ade80"}">Left Over</div><div class="cf-val" style="color:${cf.remaining<0?"#f87171":"#4ade80"}">${rm(cf.remaining)}</div></div>
+      </div>
+    </div>
+
+    ${warns.length>0?`<div class="alerts">${warns.map(w=>`<div class="alert a-${w.t}"><span>${w.t==="danger"?"!":"⚠"}</span><span>${w.m}</span></div>`).join("")}</div>`:""}
+
+    <div class="card card-sm">
+      <div class="row" style="margin-bottom:8px"><span style="font-size:11px;color:var(--text-secondary)">Checklist</span><span style="font-size:11px;color:var(--text-tertiary)">${clDone}/${CL.length}</span></div>
+      ${pbar(clDone,CL.length,"#60a5fa")}
+    </div>
+
+    <div class="card card-sm">
+      <div class="row"><span style="font-size:11px;color:var(--text-secondary)">Months to Goal</span><span style="font-size:18px;font-weight:600">${est}</span></div>
+    </div>
+
+    ${saved>=GOAL?`<div class="alert a-success"><span>✓</span><span>Goal reached! RM10,000 saved!</span></div>`:""}
+
+    <div class="card">
+      <div class="card-title">Trend (Last 6 Months)</div>
+      <div class="chart-container"><canvas id="trendCanvas"></canvas></div>
+    </div>
+  `;
+  
+  renderTrendChart();
+}
+
+function renderTrendChart(){
+  const sorted=Object.keys(S.m).sort((a,b)=>a.localeCompare(b)).slice(-6);
+  const labels=sorted.map(id=>{const m=id.substring(4,6);return MN[parseInt(m)-1]});
+  const incomeData=sorted.map(id=>parseFloat(S.m[id].t)||0);
+  const savingsData=sorted.map(id=>parseFloat(S.m[id].sv)||0);
+  const expenseData=sorted.map(id=>{
+    const cf=calcCashflow(S.m[id]);
+    return cf.fixed+cf.food+cf.misc+cf.paylater;
+  });
+
+  const ctx=document.getElementById("trendCanvas");
+  if(!ctx)return;
+  
+  if(trendChart){trendChart.destroy()}
+  
+  trendChart=new Chart(ctx,{
+    type:"bar",
+    data:{
+      labels:labels,
+      datasets:[
+        {label:"Income",data:incomeData,backgroundColor:"#60a5fa",borderRadius:4,borderSkipped:false},
+        {label:"Savings",data:savingsData,backgroundColor:"#4ade80",borderRadius:4,borderSkipped:false},
+        {label:"Expenses",data:expenseData,backgroundColor:"#f87171",borderRadius:4,borderSkipped:false},
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:"#8892a4",font:{size:10,family:"'JetBrains Mono'"},padding:8}},
+        tooltip:{backgroundColor:"#1a1d27",titleColor:"#e2e8f0",bodyColor:"#8892a4",borderColor:"#505a72",borderWidth:0.5,padding:6,titleFont:{size:10},bodyFont:{size:10}}
+      },
+      scales:{
+        y:{ticks:{color:"#505a72",font:{size:9}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true},
+        x:{ticks:{color:"#505a72",font:{size:9}},grid:{display:false}}
+      }
+    }
+  });
+}
+
+function renderMonth(){
+  const cm=getCM();
+  const cf=calcCashflow(cm);
+  const y=parseInt(cmid.substring(0,4));
+  const m=parseInt(cmid.substring(4,6));
+  const nowY=new Date().getFullYear();
+  const years=[nowY-1,nowY,nowY+1];
+  const clDone=CL.filter(i=>cm.c[i.id]).length;
+  
+  const clHtml=PH.map(ph=>{
+    const items=CL.filter(i=>i.phase===ph.id);
+    if(!items.length)return"";
+    return`<div class="phase-group"><div class="phase-title">${ph.label}</div>${items.map(item=>`<div class="check-row"><input type="checkbox" id="ck_${item.id}" ${cm.c[item.id]?"checked":""} onchange="toggleCheck('${item.id}')"><label for="ck_${item.id}" class="check-label ${cm.c[item.id]?"done":""}">${item.label}</label></div>`).join("")}</div>`;
+  }).join("");
+  
+  let ss="";
+  if(cm.sv>0&&cm.sv<800)ss=`<div class="inline-msg" style="color:#f59e0b">⚠ below target</div>`;
+  else if(cm.sv>=1000)ss=`<div class="inline-msg" style="color:#4ade80">✓ great month!</div>`;
+  else if(cm.sv>=800)ss=`<div class="inline-msg" style="color:#4ade80">✓ target met</div>`;
+
+  document.getElementById("tab-month").innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:1rem">
+      <select id="sel-month" onchange="onMonthChange()" style="flex:1">${MN.map((mn,i)=>`<option value="${i+1}" ${m===i+1?"selected":""}>${mn}</option>`).join("")}</select>
+      <select id="sel-year" onchange="onYearChange()" style="width:80px">${years.map(yr=>`<option value="${yr}" ${y===yr?"selected":""}>${yr}</option>`).join("")}</select>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Income</div>
+      <div class="field"><label>Salary (RM)</label><input type="number" step="0.01" value="${cm.s}" onchange="updateCM({s:parseFloat(this.value)||0})"></div>
+      <div class="field"><label>OT / Allowance — 14th (RM)</label><input type="number" step="0.01" value="${cm.o}" onchange="updateCM({o:parseFloat(this.value)||0})"></div>
+      <div class="toggle-row"><input type="checkbox" id="bonusFlag" ${cm.bn?"checked":""} onchange="updateCM({bn:this.checked})"><label for="bonusFlag" class="toggle-label">Bonus month</label></div>
+      <hr class="divider">
+      <div class="row"><span style="font-size:11px;color:var(--text-secondary)">Total</span><span style="font-size:16px;font-weight:600;color:${cm.bn?"#f59e0b":"var(--text-primary)"}">${rm(cm.t)}${cm.bn?" ★":""}</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Savings — Transfer First</div>
+      <div class="field"><label>Amount Saved (RM)</label><input type="number" step="0.01" value="${cm.sv}" onchange="updateCM({sv:parseFloat(this.value)||0})"></div>
+      ${ss}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Variable Expenses</div>
+      <div class="field"><label>Food (RM)</label><input type="number" step="0.01" value="${cm.food}" onchange="updateCM({food:parseFloat(this.value)||0})"></div>
+      <div class="field"><label>Misc / Entertainment (RM)</label><input type="number" step="0.01" value="${cm.misc}" onchange="updateCM({misc:parseFloat(this.value)||0})"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">PayLater Control</div>
+      <div class="field"><label>Balance (RM)</label><input type="number" step="0.01" value="${cm.p}" onchange="updateCM({p:parseFloat(this.value)||0})"></div>
+      <div class="toggle-row"><input type="checkbox" id="plFlag" ${cm.pu?"checked":""} onchange="updateCM({pu:this.checked})"><label for="plFlag" class="toggle-label" style="color:${cm.pu?"#f87171":"var(--text-secondary)"}">Used this month</label></div>
+      ${cm.pu?`<div class="alert a-danger" style="margin-top:8px"><span>!</span><span>PayLater risk — review cashflow</span></div>`:""}
+      ${cm.p<=0?`<div class="inline-msg" style="color:#4ade80">✓ Fully cleared</div>`:""}
+    </div>
+
+    <div class="card card-sm">
+      <div class="card-title">Cashflow Summary</div>
+      <div class="metric-grid">
+        <div class="metric-box"><div class="metric-label">Income</div><div class="metric-val" style="color:#60a5fa">${rm(cf.income)}</div></div>
+        <div class="metric-box"><div class="metric-label">Fixed</div><div class="metric-val" style="color:#f87171">–${rm(cf.fixed)}</div></div>
+        <div class="metric-box"><div class="metric-label">Left</div><div class="metric-val" style="color:${cf.remaining<0?"#f87171":"#4ade80"}">${rm(cf.remaining)}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:10px"><span style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.1em">Checklist</span><span style="font-size:10px;color:var(--text-tertiary)">${clDone}/${CL.length}</span></div>
+      ${pbar(clDone,CL.length,"#60a5fa")}
+      <div style="margin-top:12px">${clHtml}</div>
+    </div>
+  `;
+}
+
+function renderHistory(){
+  const entries=Object.keys(S.m).sort((a,b)=>b.localeCompare(a));
+  if(!entries.length){
+    document.getElementById("tab-history").innerHTML=`<div class="empty-state">No history yet. Log your first month in "this month".</div>`;
+    return;
+  }
+  let run=0;
+  const sorted=Object.keys(S.m).sort((a,b)=>a.localeCompare(b));
+  const rMap={};
+  sorted.forEach(id=>{run+=(parseFloat(S.m[id].sv)||0);rMap[id]=run});
+  
+  document.getElementById("tab-history").innerHTML=entries.map(id=>{
+    const m=S.m[id];
+    const y=id.substring(0,4);
+    const mo=id.substring(4,6);
+    const done=CL.filter(i=>m.c[i.id]).length;
+    const monthLabel=MN[parseInt(mo)-1]+" "+y;
+    const cf=calcCashflow(m);
+    return`<div class="hist-entry">
+      <div class="hist-head">
+        <span class="hist-month">${monthLabel}</span>
+        <button class="btn-mini" onclick="jumpToMonth('${id}')">edit</button>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+        ${m.bn?`<span class="tag tag-bonus">bonus</span>`:""}
+        ${m.pu?`<span class="tag tag-danger">paylater</span>`:""}
+        ${cf.remaining<0?`<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:var(--bg-danger);color:var(--text-danger);border:0.5px solid var(--border-danger)">tight</span>`:""}
+      </div>
+      <div class="hist-grid">
+        <div class="hist-col"><div class="hist-lbl">Income</div><div class="hist-num">${rm(m.t)}</div></div>
+        <div class="hist-col"><div class="hist-lbl">Saved</div><div class="hist-num" style="color:#4ade80">${rm(m.sv)}</div></div>
+        <div class="hist-col"><div class="hist-lbl">Running</div><div class="hist-num">${rm(rMap[id]||0)}</div></div>
+        <div class="hist-col"><div class="hist-lbl">Left</div><div class="hist-num" style="color:${cf.remaining<0?"#f87171":"#60a5fa"}">${rm(cf.remaining)}</div></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderAll(){
+  if(tab==="dashboard")renderDashboard();
+  else if(tab==="month")renderMonth();
+  else if(tab==="history")renderHistory();
+}
+
+function onMonthChange(){const m=parseInt(document.getElementById("sel-month").value);const cm=getCM();cmid=mid(cm.y,m);renderAll()}
+function onYearChange(){const y=parseInt(document.getElementById("sel-year").value);const cm=getCM();cmid=mid(y,cm.m);renderAll()}
+function jumpToMonth(id){cmid=id;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));const btn=document.querySelectorAll(".tab")[1];btn.classList.add("active");switchTab("month",btn)}
+
+loadState();
+</script>
+</body>
+</html>
